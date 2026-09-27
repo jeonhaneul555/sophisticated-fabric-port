@@ -11,6 +11,8 @@ replacements = {
     "fabric_version": "0.136.1+1.21.8",
     "loader_version": "0.19.4",
     "release_versions": "1.21.8",
+    "curseforge_minecraft_versions": "1.21.8",
+    "modrinth_minecraft_versions": "1.21.8",
 }
 for key, value in replacements.items():
     text = re.sub(rf"(?m)^{re.escape(key)}\s*=.*$", f"{key}={value}", text)
@@ -18,15 +20,24 @@ props.write_text(text, encoding="utf-8")
 
 build = project / "build.gradle"
 b = build.read_text(encoding="utf-8")
-b = b.replace("id 'fabric-loom' version '1.10.+'", "id 'fabric-loom' version '1.11.8'")
+b = re.sub(
+    r"id 'fabric-loom' version '[^']+'",
+    "id 'fabric-loom' version '1.11.8'",
+    b,
+)
 
-# Parchment 1.21 mappings cannot safely be layered over Minecraft 1.21.8.
-# Start from Mojang's official 1.21.8 mappings.
+# Use Mojang's official 1.21.8 mappings while the port is being migrated.
 b = re.sub(
     r"mappings\(loom\.layered \{\s*it\.officialMojangMappings\(\)\s*it\.parchment\([^\n]+\)\s*\}\)",
     "mappings loom.officialMojangMappings()",
     b,
     flags=re.S,
+)
+
+# SophisticatedFabricLib branch contains a publish placeholder here.
+b = b.replace(
+    'modImplementation "net.fabricmc.fabric-api:fabric-api:FABRIC_API_VERSION"',
+    'modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"',
 )
 build.write_text(b, encoding="utf-8")
 
