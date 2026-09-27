@@ -1,0 +1,78 @@
+name: Build Sophisticated Fabric 1.21.8
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Prepare Fabric sources
+        run: bash scripts/prepare.sh
+
+      - name: Build Core then Backpacks
+        id: build
+        shell: bash
+        run: |
+          set +e
+          set -o pipefail
+          chmod +x work/core/gradlew work/backpacks/gradlew
+
+          (cd work/core && ./gradlew clean build publishToMavenLocal -x test --stacktrace --no-daemon) 2>&1 | tee core-build.log
+          CORE_STATUS=${PIPESTATUS[0]}
+          echo "core_status=$CORE_STATUS" >> "$GITHUB_OUTPUT"
+
+          BP_STATUS=99
+          if [ "$CORE_STATUS" -eq 0 ]; then
+            CORE_VERSION=$(cd work/core && ./gradlew properties -q | awk '/^version:/ {print $2; exit}')
+            echo "Built Core version: $CORE_VERSION"
+            sed -i "s|^sc_version=.*$|sc_version=$CORE_VERSION|" work/backpacks/gradle.properties
+            (cd work/backpacks && ./gradlew clean build -x test --stacktrace --no-daemon) 2>&1 | tee backpacks-build.log
+            BP_STATUS=${PIPESTATUS[0]}
+          else
+            echo "Backpacks build skipped because Core did not compile." | tee backpacks-build.log
+          fi
+          echo "backpacks_status=$BP_STATUS" >> "$GITHUB_OUTPUT"
+
+          mkdir -p artifacts
+          find work/core/build/libs -maxdepth 1 -type f -name '*.jar' -exec cp {} artifacts/ \; 2>/dev/null || true
+          find work/backpacks/build/libs -maxdepth 1 -type f -name '*.jar' -exec cp {} artifacts/ \; 2>/dev/null || true
+          printf 'core=%s\nbackpacks=%s\n' "$CORE_STATUS" "$BP_STATUS" > artifacts/build-status.txt
+
+          if [ "$CORE_STATUS" -ne 0 ] || [ "$BP_STATUS" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            core-build.log
+            backpacks-build.log
+            artifacts/build-status.txt
+          if-no-files-found: ignore
+
+      - name: Upload jars
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sophisticated-fabric-1.21.8
+          path: artifacts/*.jar
+          if-no-files-found: ignore
