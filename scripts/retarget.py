@@ -17,7 +17,8 @@ for key, value in replacements.items():
 props.write_text(text, encoding="utf-8")
 
 build = project / "build.gradle"
-b = build.read_text(encoding="utf-8")nb = b.replace("id 'fabric-loom' version '1.10.+'", "id 'fabric-loom' version '1.11.8'")
+b = build.read_text(encoding="utf-8")
+b = b.replace("id 'fabric-loom' version '1.10.+'", "id 'fabric-loom' version '1.11.8'")
 
 # Parchment 1.21 mappings cannot safely be layered over Minecraft 1.21.8.
 # Use Mojang's official 1.21.8 mappings first; parameter/Javadoc mappings can be restored later.
