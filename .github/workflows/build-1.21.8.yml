@@ -24,19 +24,28 @@ jobs:
       - name: Prepare Fabric sources
         run: bash scripts/prepare.sh
 
-      - name: Build Core then Backpacks
+      - name: Build FabricLib, Core, Backpacks
         id: build
         shell: bash
         run: |
           set +e
           set -o pipefail
-          chmod +x work/core/gradlew work/backpacks/gradlew
+          chmod +x work/fabriclib/gradlew work/core/gradlew work/backpacks/gradlew
 
-          (cd work/core && ./gradlew clean build publishToMavenLocal -x test --stacktrace --no-daemon) 2>&1 | tee core-build.log
-          CORE_STATUS=${PIPESTATUS[0]}
+          (cd work/fabriclib && ./gradlew clean build publishToMavenLocal -x test -x runGameTest --stacktrace --no-daemon) 2>&1 | tee fabriclib-build.log
+          LIB_STATUS=${PIPESTATUS[0]}
+          echo "fabriclib_status=$LIB_STATUS" >> "$GITHUB_OUTPUT"
+
+          CORE_STATUS=99
+          BP_STATUS=99
+          if [ "$LIB_STATUS" -eq 0 ]; then
+            (cd work/core && ./gradlew clean build publishToMavenLocal -x test --stacktrace --no-daemon) 2>&1 | tee core-build.log
+            CORE_STATUS=${PIPESTATUS[0]}
+          else
+            echo "Core build skipped because FabricLib did not compile." | tee core-build.log
+          fi
           echo "core_status=$CORE_STATUS" >> "$GITHUB_OUTPUT"
 
-          BP_STATUS=99
           if [ "$CORE_STATUS" -eq 0 ]; then
             CORE_VERSION=$(cd work/core && ./gradlew properties -q | awk '/^version:/ {print $2; exit}')
             echo "Built Core version: $CORE_VERSION"
@@ -49,11 +58,12 @@ jobs:
           echo "backpacks_status=$BP_STATUS" >> "$GITHUB_OUTPUT"
 
           mkdir -p artifacts
+          find work/fabriclib/build/libs -maxdepth 1 -type f -name '*.jar' -exec cp {} artifacts/ \; 2>/dev/null || true
           find work/core/build/libs -maxdepth 1 -type f -name '*.jar' -exec cp {} artifacts/ \; 2>/dev/null || true
           find work/backpacks/build/libs -maxdepth 1 -type f -name '*.jar' -exec cp {} artifacts/ \; 2>/dev/null || true
-          printf 'core=%s\nbackpacks=%s\n' "$CORE_STATUS" "$BP_STATUS" > artifacts/build-status.txt
+          printf 'fabriclib=%s\ncore=%s\nbackpacks=%s\n' "$LIB_STATUS" "$CORE_STATUS" "$BP_STATUS" > artifacts/build-status.txt
 
-          if [ "$CORE_STATUS" -ne 0 ] || [ "$BP_STATUS" -ne 0 ]; then
+          if [ "$LIB_STATUS" -ne 0 ] || [ "$CORE_STATUS" -ne 0 ] || [ "$BP_STATUS" -ne 0 ]; then
             exit 1
           fi
 
@@ -63,6 +73,7 @@ jobs:
         with:
           name: build-logs
           path: |
+            fabriclib-build.log
             core-build.log
             backpacks-build.log
             artifacts/build-status.txt
