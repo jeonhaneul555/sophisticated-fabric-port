@@ -21,11 +21,11 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Prepare official 1.21.8 sources and Fabric references
-        run: bash scripts/prepare.sh
+      - name: Merge Fabric ports with official 1.21.8
+        run: bash scripts/merge_sources.sh
 
-      - name: Upload port reports
+      - name: Upload merge reports
         uses: actions/upload-artifact@v4
         with:
-          name: port-reports
-          path: artifacts/*-port-report.txt
+          name: merged-source-reports
+          path: artifacts/*-merged-report.txt
