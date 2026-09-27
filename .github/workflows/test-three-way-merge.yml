@@ -1,0 +1,25 @@
+name: Test Fabric + Official 1.21.8 Merge
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  merge-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Three-way merge Fabric ports with official 1.21.8
+        run: bash scripts/test_three_way_merge.sh
+      - name: Upload merge reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: merge-reports
+          path: artifacts/*-merge-report.txt
+          if-no-files-found: ignore
