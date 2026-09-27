@@ -28,5 +28,13 @@ b = re.sub(
     b,
     flags=re.S,
 )
-
 build.write_text(b, encoding="utf-8")
+
+wrapper = project / "gradle/wrapper/gradle-wrapper.properties"
+w = wrapper.read_text(encoding="utf-8")
+w = re.sub(
+    r"(?m)^distributionUrl=.*$",
+    r"distributionUrl=https\://services.gradle.org/distributions/gradle-8.14.4-bin.zip",
+    w,
+)
+wrapper.write_text(w, encoding="utf-8")
