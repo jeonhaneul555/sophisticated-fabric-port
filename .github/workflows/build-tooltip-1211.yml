@@ -26,6 +26,15 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
+      - name: Regression test for shift-click and drag
+        shell: bash
+        working-directory: tooltip-always
+        run: |
+          mkdir -p /tmp/cobbleverse-tooltip-tests
+          javac -d /tmp/cobbleverse-tooltip-tests \
+            src/main/java/dev/cobbleverse/autotooltips/TooltipCallDetector.java \
+            src/test/java/dev/cobbleverse/autotooltips/TooltipCallDetectorPolicyTest.java
+          java -cp /tmp/cobbleverse-tooltip-tests dev.cobbleverse.autotooltips.TooltipCallDetectorPolicyTest
       - name: Build with Fabric Loom
         working-directory: tooltip-always
         run: gradle --no-daemon clean build --stacktrace
@@ -36,7 +45,7 @@ jobs:
           from zipfile import ZipFile
           from pathlib import Path
           import json
-          jar=Path("build/libs/cobbleverse-auto-tooltips-0.1.0.jar")
+          jar=Path("build/libs/cobbleverse-auto-tooltips-0.2.0.jar")
           assert jar.is_file(), f"Missing distributable: {jar}"
           with ZipFile(jar) as z:
               names=set(z.namelist())
@@ -51,10 +60,11 @@ jobs:
       - name: Publish verified JAR to branch
         run: |
           mkdir -p dist
-          cp tooltip-always/build/libs/cobbleverse-auto-tooltips-0.1.0.jar dist/
+          cp tooltip-always/build/libs/cobbleverse-auto-tooltips-0.2.0.jar dist/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add dist/cobbleverse-auto-tooltips-0.1.0.jar
+          git rm -f dist/cobbleverse-auto-tooltips-0.1.0.jar || true
+          git add dist/cobbleverse-auto-tooltips-0.2.0.jar
           if ! git diff --cached --quiet; then
             git commit -m "Publish validated Cobbleverse auto-tooltips JAR [skip ci]"
             git push origin HEAD:cobbleverse-tooltip-1211
@@ -65,6 +75,6 @@ jobs:
         with:
           name: cobbleverse-auto-tooltips-1.21.1
           path: |
-            tooltip-always/build/libs/cobbleverse-auto-tooltips-0.1.0.jar
+            tooltip-always/build/libs/cobbleverse-auto-tooltips-0.2.0.jar
             tooltip-always/build/reports/**
           if-no-files-found: warn
