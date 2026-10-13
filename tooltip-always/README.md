@@ -1,34 +1,37 @@
-# Cobbleverse Auto Tooltips (experimental)
+# Cobbleverse Auto Tooltips 0.2.0 (experimental)
 
-Minecraft 1.21.1 • Fabric • Java 21 • **client only**.
+Minecraft 1.21.1 • Fabric • Java 21 • **client only**
 
-## What it does
+## Purpose
 
-When a mod checks `Screen.hasShiftDown()` or `Screen.hasControlDown()`
-during synchronous tooltip construction, this mod makes the answer `true`.
-Regular gameplay and inventory keyboard shortcuts are unaffected because
-the override is guarded by the current tooltip call stack.
+Reveal existing Shift/Ctrl-gated item tooltips and Sophisticated Backpacks
+(Unofficial Fabric port) contents preview without holding a modifier key.
 
-The Sophisticated Backpacks (Unofficial Fabric port) 1.21.1 implementation
-calls `Screen.hasShiftDown()` inside
-`BackpackItemClient#getTooltipImage`, so its preview is covered.
+## Critical change from 0.1.0
 
-## Limitations
+Version 0.1.0 caused normal inventory clicks to behave as Shift+clicks.
+**Remove 0.1.0 before installing 0.2.0.**
 
-- Not a universal solution: mods may read GLFW/keyboard state directly,
-  cache key state, or request missing data from the server.
-- Mods with custom tooltip renderers may need specific integration.
-- The implementation does **not** make server-only item data appear on the client.
-- This is an initial compatibility build; successful compilation alone does
-  **not** prove no in-game crash with a particular modpack.
+0.2.0 allows virtual modifiers only when *both* a tooltip and a rendering
+method are on the current call stack. Mouse, keyboard, container-click,
+drag, and quick-move handlers explicitly disable virtual modifiers.
+When context is uncertain, actual keyboard state takes priority.
 
-No Fabric API dependency; compatible with Fabric Loader 0.18.4.
+11 standalone regression cases assert the intended tooltip/input policy.
+The Fabric build and JAR metadata are checked by GitHub Actions.
+
+## Compatibility
+
+- Minecraft 1.21.1 and Fabric Loader 0.18.4 / Java 21 are targeted.
+- No Fabric API dependency; client-only mod.
+- Mods that use direct GLFW key reads or custom tooltip systems may need adapters.
+- Client-side tooltips cannot reveal server-only data.
+- Successful compilation does not prove behavior in every modpack GUI.
 
 ## Build
 
-With JDK 21 and Gradle 8.10.2:
+JDK 21 and Gradle 8.10.2:
 
 `gradle --no-daemon clean build`
 
-Install only the remapped `cobbleverse-auto-tooltips-0.1.0.jar`,
-**not** a `-dev.jar`.
+Install `cobbleverse-auto-tooltips-0.2.0.jar` (not dev or sources JAR).
