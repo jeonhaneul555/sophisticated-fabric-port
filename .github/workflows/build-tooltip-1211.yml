@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -48,6 +48,17 @@ jobs:
               assert data["environment"] == "client"
               print("Validated:",jar, "bytes:",jar.stat().st_size)
           PY
+      - name: Publish verified JAR to branch
+        run: |
+          mkdir -p dist
+          cp tooltip-always/build/libs/cobbleverse-auto-tooltips-0.1.0.jar dist/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/cobbleverse-auto-tooltips-0.1.0.jar
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish validated Cobbleverse auto-tooltips JAR [skip ci]"
+            git push origin HEAD:cobbleverse-tooltip-1211
+          fi
       - name: Upload JAR and build diagnostics
         if: always()
         uses: actions/upload-artifact@v4
