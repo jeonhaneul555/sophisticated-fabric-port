@@ -8,6 +8,10 @@ on:
       - '.github/workflows/build-tooltip-1211.yml'
   workflow_dispatch:
 
+concurrency:
+  group: cobbleverse-tooltip-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
