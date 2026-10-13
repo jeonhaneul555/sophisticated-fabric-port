@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "cobbleverse_auto_tooltips",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": "Cobbleverse Auto Tooltips",
   "description": "Automatically expands modifier-gated tooltip details without holding Shift or Ctrl, when mods use the standard Screen modifier checks.",
   "authors": ["Cobbleverse Auto Tooltips"],
